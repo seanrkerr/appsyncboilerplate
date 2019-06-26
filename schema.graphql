@@ -1,0 +1,20 @@
+input HelloInput {
+  message: String
+}
+
+type Mutation {
+  addHello(hello: HelloInput!): Hello
+}
+
+type Hello {
+  id: Int
+  message: String
+}
+
+type Query {
+  getHellos(limit: Int, currentPage: Int, nextPage: Int): [Hello]
+}
+
+type Subscription {
+  onHelloAdded: Post @aws_subscribe(mutations: ["addHello"])
+}

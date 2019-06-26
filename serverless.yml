@@ -1,0 +1,83 @@
+# Welcome to serverless. Read the docs
+# https://serverless.com/framework/docs/
+
+# Serverless.yml is the configuration the CLI
+# uses to deploy your code to your provider of choice
+
+# The `service` block is the name of the service
+service:
+  name: appsyncboiler
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  timeout: 300
+  vpc:
+    securityGroupIds:
+      - Fn::GetAtt: [DatabaseVpcSecurityGroup, GroupId]
+    subnetIds:
+      - Ref: PrivateSubnet1
+      - Ref: PrivateSubnet2
+  environment:
+    DATABASE_URL: { Fn::GetAtt: [Database, Endpoint.Address] }
+    DATABASE_NAME: ${self:custom.dbName}
+    DATABASE_USERNAME: ${self:custom.dbUserName}
+    DATABASE_PASSWORD: ${self:custom.dbPassword}
+
+plugins:
+  - serverless-appsync-plugin
+  - serverless-pseudo-parameters
+
+custom:
+  poolName: ${self:provider.stage}myDB
+  dbName: "myDB"
+  dbUserName: "root"
+  dbPassword: "Password"
+  systemUserEmail: "a@a.com"
+  appSync:
+    region: ${self:provider.region}
+    name: ${self:service.name}-${self:provider.stage}
+    authenticationType: AMAZON_COGNITO_USER_POOLS
+    serviceRole: "${self:service.name}-AppSyncServiceRole"
+    userPoolConfig:
+      awsRegion: "${self:provider.region}"
+      userPoolId:
+        Ref: CognitoUserPool
+      defaultAction: ALLOW
+    logConfig:
+      #loggingRoleArn: { Fn::GetAtt: [service.name, AppSyncServiceRole] }
+      level: ERROR # Logging Level: NONE | ERROR | ALL  
+    mappingTemplates:
+      - type: Query
+        dataSource: LambdaSource
+        field: getPosts
+        request: "Query-getHellos-request.vtl"
+        response: "Query-getHellos-response.vtl"
+      - type: Mutation
+        field: addHello
+        request: Mutation-addHello-request.vtl
+        response: common-response.vtl
+    functionConfigurations:
+      - dataSource: LambdaSource
+        name: "addHello"
+        request: "Function-addHello-request.vtl"
+        response: "common-response.vtl"
+    dataSources:
+      - type: AWS_LAMBDA
+        name: LambdaSource
+        description: "Lambda DataSource"
+        config:
+          functionName: graphql
+          lambdaFunctionArn: { Fn::GetAtt: [GraphqlLambdaFunction, Arn] }
+          serviceRoleArn: { Fn::GetAtt: [AppSyncLambdaServiceRole, Arn] }
+functions:
+  graphql:
+    handler: handler.handler
+resources:
+  #appSync data source role
+  - ${file(resources/appsync.yml)}
+  # rds
+  - ${file(resources/rds.yml)}
+  # Cognito
+  - ${file(resources/cognito.yml)}
