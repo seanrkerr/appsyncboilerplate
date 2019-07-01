@@ -1,5 +1,9 @@
 # APPSync  / RDS Aurora Serverless / cognito boilerplate
 
+1. Item 1
+1. Item 2
+1. Item 3
+
 
 1. use this format in postman
 {"query":"mutation {\n  addHello(hello: {\n    message: \"hello\"\n  }) {\n    message\n  }\n}","variables":null}
