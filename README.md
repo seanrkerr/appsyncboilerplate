@@ -1,4 +1,4 @@
-###APPSync  / RDS Aurora Serverless / cognito boilerplate
+# APPSync  / RDS Aurora Serverless / cognito boilerplate
 
 
 1. use this format in postman
